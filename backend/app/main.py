@@ -4,7 +4,7 @@ import io
 import os
 import re
 import sqlite3
-from contextlib import contextmanager
+from contextlib import asynccontextmanager, contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Iterator
@@ -12,17 +12,32 @@ from urllib.parse import urlparse
 from uuid import uuid4
 
 from fastapi import FastAPI, HTTPException, Request, Response
-from fastapi.responses import FileResponse, RedirectResponse, Response
+from fastapi.responses import FileResponse, RedirectResponse
 from pydantic import BaseModel, Field, HttpUrl, field_validator
 import qrcode
 
 DB_PATH = os.getenv("LINKPULSE_DB_PATH", str(Path(__file__).resolve().parents[1] / "linkpulse.db"))
 SLUG_RE = re.compile(r"^[a-zA-Z0-9_-]{3,48}$")
 
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    # This build is a single-tenant SQLite development foundation. Do not allow
+    # it to be exposed as a production service before auth, tenant isolation,
+    # PostgreSQL migrations, and operational controls are implemented.
+    if os.getenv("LINKPULSE_ENV", "development").lower() == "production":
+        raise RuntimeError(
+            "Production startup is disabled: authentication, workspace isolation, "
+            "PostgreSQL migrations, and production security controls are not yet implemented."
+        )
+    init_db()
+    yield
+
+
 app = FastAPI(
     title="LinkPulse API",
     version="0.1.0",
     description="Self-hostable link management and campaign measurement API.",
+    lifespan=lifespan,
 )
 
 
@@ -68,11 +83,6 @@ def init_db() -> None:
         if "max_clicks" not in columns:
             conn.execute("ALTER TABLE links ADD COLUMN max_clicks INTEGER")
         conn.execute("CREATE INDEX IF NOT EXISTS idx_clicks_link_time ON clicks(link_id, clicked_at)")
-
-
-@app.on_event("startup")
-def startup() -> None:
-    init_db()
 
 
 class UTMBuild(BaseModel):
