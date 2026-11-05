@@ -11,6 +11,8 @@ Status reflects planning only; items are not marked complete until implemented a
 
 ## Phase 1 — Link management
 - [ ] Workspace and project model
+- [ ] Authentication, secure sessions, invitations and role-based access
+- [ ] PostgreSQL + Alembic migrations; SQLite remains development/test-only
 - [x] Link create, update, archive, and redirect (initial API slice)
 - [x] Custom aliases (initial slug support) and UTM URL builder API
 - [ ] Persist campaign metadata and expose UTM builder in dashboard
