@@ -47,6 +47,35 @@ def test_create_and_redirect_records_click():
     assert analytics["referrers"][0]["source"] == "newsletter.example.org"
 
 
+def test_update_rejects_null_destination_url():
+    created = client.post("/api/links", json={
+        "destination_url": "https://example.com/original",
+        "slug": "nonnull1",
+    })
+    assert created.status_code == 201
+    response = client.patch("/api/links/nonnull1", json={"destination_url": None})
+    assert response.status_code == 422
+    assert client.get("/api/links/nonnull1").json()["destination_url"] == "https://example.com/original"
+
+
+def test_bot_preview_clicks_are_reported_separately():
+    created = client.post("/api/links", json={
+        "destination_url": "https://example.com",
+        "slug": "botcheck1",
+    })
+    assert created.status_code == 201
+    client.get("/r/botcheck1", follow_redirects=False, headers={"user-agent": "Slackbot-LinkExpanding"})
+    client.get("/r/botcheck1", follow_redirects=False, headers={"user-agent": "Mozilla/5.0 (Windows NT 10.0) Chrome/120"})
+    analytics = client.get("/api/links/botcheck1/analytics").json()
+    assert analytics["total_clicks"] == 2
+    assert analytics["human_clicks"] == 1
+    assert analytics["bot_or_preview_clicks"] == 1
+    overview = client.get("/api/analytics/overview").json()
+    assert overview["tracked_clicks"] == 2
+    assert overview["human_clicks"] == 1
+    assert overview["bot_or_preview_clicks"] == 1
+
+
 def test_duplicate_slug_is_conflict():
     body = {"destination_url": "https://example.com", "slug": "same-slug"}
     assert client.post("/api/links", json=body).status_code == 201
