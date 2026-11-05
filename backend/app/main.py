@@ -73,6 +73,15 @@ def startup() -> None:
     init_db()
 
 
+class UTMBuild(BaseModel):
+    destination_url: HttpUrl
+    source: str = Field(min_length=1, max_length=100)
+    medium: str = Field(min_length=1, max_length=100)
+    campaign: str = Field(min_length=1, max_length=150)
+    term: str | None = Field(default=None, max_length=150)
+    content: str | None = Field(default=None, max_length=150)
+
+
 class LinkCreate(BaseModel):
     destination_url: HttpUrl
     slug: str | None = Field(default=None, min_length=3, max_length=48)
@@ -162,6 +171,28 @@ def dashboard():
 @app.get("/health")
 def health() -> dict:
     return {"status": "ok", "service": "linkpulse-api", "version": "0.1.0"}
+
+
+@app.post("/api/utm/build")
+def build_utm_url(payload: UTMBuild) -> dict:
+    """Build a tagged URL while preserving existing destination query parameters."""
+    from urllib.parse import parse_qsl, urlencode, urlunparse
+
+    parsed = urlparse(str(payload.destination_url))
+    params = dict(parse_qsl(parsed.query, keep_blank_values=True))
+    params.update({
+        "utm_source": payload.source,
+        "utm_medium": payload.medium,
+        "utm_campaign": payload.campaign,
+    })
+    if payload.term:
+        params["utm_term"] = payload.term
+    if payload.content:
+        params["utm_content"] = payload.content
+    tagged_url = urlunparse(parsed._replace(query=urlencode(params)))
+    return {"tagged_url": tagged_url, "parameters": {
+        key: value for key, value in params.items() if key.startswith("utm_")
+    }}
 
 
 @app.post("/api/links", response_model=LinkOut, status_code=201)
