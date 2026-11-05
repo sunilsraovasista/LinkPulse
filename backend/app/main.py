@@ -11,7 +11,7 @@ from urllib.parse import urlparse
 from uuid import uuid4
 
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import RedirectResponse
+from fastapi.responses import FileResponse, RedirectResponse
 from pydantic import BaseModel, Field, HttpUrl, field_validator
 
 DB_PATH = os.getenv("LINKPULSE_DB_PATH", str(Path(__file__).resolve().parents[1] / "linkpulse.db"))
@@ -145,6 +145,11 @@ def row_to_link(row: sqlite3.Row) -> dict:
         "expires_at": row["expires_at"],
         "max_clicks": row["max_clicks"],
     }
+
+
+@app.get("/", include_in_schema=False)
+def dashboard():
+    return FileResponse(Path(__file__).parent / "static" / "index.html")
 
 
 @app.get("/health")
