@@ -5,13 +5,15 @@ Status reflects planning only; items are not marked complete until implemented a
 ## Phase 0 — Product and engineering foundation
 - [ ] Confirm product requirements and user personas
 - [ ] Validate competitor gaps and open-source license choice
-- [ ] Establish repository conventions, CI, linting, and test strategy
+- [x] Establish repository conventions, CI workflow, and API regression-test suite (CI execution still to be verified)
+- [ ] Add linting, coverage thresholds, and migration tests
 - [ ] Define threat model, privacy model, and data retention defaults
 
 ## Phase 1 — Link management
 - [ ] Workspace and project model
 - [x] Link create, update, archive, and redirect (initial API slice)
-- [ ] Custom aliases and UTM metadata
+- [x] Custom aliases (initial slug support) and UTM URL builder API
+- [ ] Persist campaign metadata and expose UTM builder in dashboard
 - [ ] QR code generation
 - [x] Expiry and click-limit enforcement
 - [ ] Password-protected links
@@ -19,7 +21,7 @@ Status reflects planning only; items are not marked complete until implemented a
 
 ## Phase 2 — Click intelligence
 - [x] Initial click event collection (timestamp, referrer host, coarse device class; advanced classification pending)
-- [ ] Bot and crawler classification
+- [x] Basic bot/link-preview classification with separate counts (advanced detection and filtering pending)
 - [ ] Deduplication and aggregation
 - [ ] Referrer and coarse device/browser reporting
 - [ ] Privacy controls and retention jobs
