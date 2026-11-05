@@ -28,7 +28,7 @@ td{padding:13px 10px;border-bottom:1px solid #f0f2f5;vertical-align:middle}
 td a{color:#315c89;text-decoration:none;word-break:break-all}.slug{font-weight:700;color:#25364a}
 .small{font-size:11px;color:#8290a0;margin-top:4px}.empty{text-align:center;color:#8490a0;padding:32px}
 .toast{display:none;padding:10px 12px;border-radius:9px;margin:0 0 15px;font-size:13px}.toast.show{display:block}.toast.error{background:#fff0ee;color:#a53b2d}.toast.ok{background:#eaf6ee;color:#286444}
-.actions{display:flex;gap:6px}.actions button{padding:7px 9px;font-size:11px}
+.actions{display:flex;gap:6px}.actions button{padding:7px 9px;font-size:11px}.qr-link{display:inline-block;padding:7px 9px;border-radius:9px;background:#edf1f5;color:#344256;text-decoration:none;font-size:11px;font-weight:650}
 @media(max-width:850px){.layout{grid-template-columns:1fr}.metrics{grid-template-columns:1fr 1fr 1fr}}
 @media(max-width:560px){.shell{padding:20px 14px}.metrics{gap:8px}.metric{padding:13px}.metric strong{font-size:22px}.metric span{font-size:10px}h1{font-size:25px}}
 </style>
@@ -74,7 +74,9 @@ async function refresh(){
   const actions=document.createElement("td");actions.className="actions";
   const view=document.createElement("button");view.className="secondary";view.textContent="Details";view.onclick=()=>showDetails(link.slug,analytics);
   actions.append(view);
-  if(link.is_active){const archive=document.createElement("button");archive.className="secondary";archive.textContent="Archive";archive.onclick=async()=>{try{await api("/api/links/"+encodeURIComponent(link.slug),{method:"DELETE"});notify("Link archived.");refresh()}catch(e){notify(e.message,true)}};actions.append(archive)}
+  if(link.is_active){
+   const qr=document.createElement("a");qr.href="/api/links/"+encodeURIComponent(link.slug)+"/qr";qr.target="_blank";qr.rel="noopener";qr.textContent="QR";qr.className="qr-link";qr.title="Open PNG QR code";actions.append(qr);
+   const archive=document.createElement("button");archive.className="secondary";archive.textContent="Archive";archive.onclick=async()=>{try{await api("/api/links/"+encodeURIComponent(link.slug),{method:"DELETE"});notify("Link archived.");refresh()}catch(e){notify(e.message,true)}};actions.append(archive)}
   tr.append(linkCell,count,status,actions);body.append(tr);
  }
 }
