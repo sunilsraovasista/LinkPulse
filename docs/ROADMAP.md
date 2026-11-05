@@ -14,7 +14,8 @@ Status reflects planning only; items are not marked complete until implemented a
 - [x] Link create, update, archive, and redirect (initial API slice)
 - [x] Custom aliases (initial slug support) and UTM URL builder API
 - [ ] Persist campaign metadata and expose UTM builder in dashboard
-- [ ] QR code generation
+- [x] PNG QR generation API and active-link dashboard action
+- [ ] SVG/PDF export and QR management
 - [x] Expiry and click-limit enforcement
 - [ ] Password-protected links
 - [ ] Bulk CSV import/export
