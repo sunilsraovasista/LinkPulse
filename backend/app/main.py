@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import io
 import os
 import re
 import sqlite3
@@ -11,8 +12,9 @@ from urllib.parse import urlparse
 from uuid import uuid4
 
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import FileResponse, RedirectResponse
+from fastapi.responses import FileResponse, RedirectResponse, Response
 from pydantic import BaseModel, Field, HttpUrl, field_validator
+import qrcode
 
 DB_PATH = os.getenv("LINKPULSE_DB_PATH", str(Path(__file__).resolve().parents[1] / "linkpulse.db"))
 SLUG_RE = re.compile(r"^[a-zA-Z0-9_-]{3,48}$")
@@ -282,6 +284,29 @@ def redirect_link(slug: str, request: Request) -> RedirectResponse:
         )
         destination = row["destination_url"]
     return RedirectResponse(destination, status_code=307)
+
+
+@app.get("/api/links/{slug}/qr")
+def link_qr(slug: str, request: Request) -> Response:
+    """Generate a PNG QR code for an active short link."""
+    with connection() as conn:
+        link = conn.execute(
+            "SELECT slug, is_active FROM links WHERE slug = ?", (slug,)
+        ).fetchone()
+    if link is None:
+        raise HTTPException(status_code=404, detail="Short link not found.")
+    if not link["is_active"]:
+        raise HTTPException(status_code=410, detail="Archived links do not have an active QR code.")
+    public_base = os.getenv("LINKPULSE_PUBLIC_BASE_URL", str(request.base_url)).rstrip("/")
+    short_url = f"{public_base}/r/{slug}"
+    image = qrcode.make(short_url)
+    buffer = io.BytesIO()
+    image.save(buffer, format="PNG")
+    return Response(
+        content=buffer.getvalue(),
+        media_type="image/png",
+        headers={"Cache-Control": "public, max-age=300"},
+    )
 
 
 @app.get("/api/links/{slug}/analytics")
