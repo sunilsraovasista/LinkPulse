@@ -60,6 +60,11 @@ def init_db() -> None:
                 device_type TEXT NOT NULL
             )
         """)
+        columns = {row["name"] for row in conn.execute("PRAGMA table_info(links)").fetchall()}
+        if "expires_at" not in columns:
+            conn.execute("ALTER TABLE links ADD COLUMN expires_at TEXT")
+        if "max_clicks" not in columns:
+            conn.execute("ALTER TABLE links ADD COLUMN max_clicks INTEGER")
         conn.execute("CREATE INDEX IF NOT EXISTS idx_clicks_link_time ON clicks(link_id, clicked_at)")
 
 
@@ -72,12 +77,36 @@ class LinkCreate(BaseModel):
     destination_url: HttpUrl
     slug: str | None = Field(default=None, min_length=3, max_length=48)
     title: str | None = Field(default=None, max_length=120)
+    expires_at: datetime | None = None
+    max_clicks: int | None = Field(default=None, ge=1, le=10000000)
+
+    @field_validator("expires_at")
+    @classmethod
+    def timezone_required(cls, value: datetime | None) -> datetime | None:
+        if value is not None and value.tzinfo is None:
+            raise ValueError("expires_at must include a timezone.")
+        return value
 
     @field_validator("slug")
     @classmethod
     def valid_slug(cls, value: str | None) -> str | None:
         if value is not None and not SLUG_RE.fullmatch(value):
             raise ValueError("Slug must be 3-48 characters: letters, numbers, hyphens or underscores.")
+        return value
+
+
+class LinkUpdate(BaseModel):
+    destination_url: HttpUrl | None = None
+    title: str | None = Field(default=None, max_length=120)
+    is_active: bool | None = None
+    expires_at: datetime | None = None
+    max_clicks: int | None = Field(default=None, ge=1, le=10000000)
+
+    @field_validator("expires_at")
+    @classmethod
+    def update_timezone_required(cls, value: datetime | None) -> datetime | None:
+        if value is not None and value.tzinfo is None:
+            raise ValueError("expires_at must include a timezone.")
         return value
 
 
@@ -89,6 +118,8 @@ class LinkOut(BaseModel):
     created_at: str
     is_active: bool
     short_path: str
+    expires_at: str | None = None
+    max_clicks: int | None = None
 
 
 def classify_device(user_agent: str) -> str:
@@ -111,6 +142,8 @@ def row_to_link(row: sqlite3.Row) -> dict:
         "created_at": row["created_at"],
         "is_active": bool(row["is_active"]),
         "short_path": f"/r/{row['slug']}",
+        "expires_at": row["expires_at"],
+        "max_clicks": row["max_clicks"],
     }
 
 
@@ -127,8 +160,11 @@ def create_link(payload: LinkCreate) -> dict:
     with connection() as conn:
         try:
             conn.execute(
-                "INSERT INTO links(id, slug, destination_url, title, created_at) VALUES (?, ?, ?, ?, ?)",
-                (link_id, slug, str(payload.destination_url), payload.title, created_at),
+                "INSERT INTO links(id, slug, destination_url, title, created_at, expires_at, max_clicks) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?)",
+                (link_id, slug, str(payload.destination_url), payload.title, created_at,
+                 payload.expires_at.astimezone(timezone.utc).isoformat() if payload.expires_at else None,
+                 payload.max_clicks),
             )
         except sqlite3.IntegrityError:
             raise HTTPException(status_code=409, detail="That short-link slug is already in use.")
