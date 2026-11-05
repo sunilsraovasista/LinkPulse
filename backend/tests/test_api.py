@@ -183,3 +183,4 @@ def test_dashboard_is_served():
     assert response.status_code == 200
     assert "Campaign workspace" in response.text
     assert "Create a short link" in response.text
+    assert 'title="Open PNG QR code"' in response.text
