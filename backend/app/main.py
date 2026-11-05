@@ -179,6 +179,36 @@ def list_links() -> list[dict]:
     return [row_to_link(row) for row in rows]
 
 
+@app.patch("/api/links/{slug}", response_model=LinkOut)
+def update_link(slug: str, payload: LinkUpdate) -> dict:
+    changes = payload.model_dump(exclude_unset=True)
+    if not changes:
+        raise HTTPException(status_code=400, detail="Provide at least one field to update.")
+    if "expires_at" in changes:
+        value = changes["expires_at"]
+        changes["expires_at"] = value.astimezone(timezone.utc).isoformat() if value else None
+    if "destination_url" in changes and changes["destination_url"] is not None:
+        changes["destination_url"] = str(changes["destination_url"])
+    allowed = {"destination_url", "title", "is_active", "expires_at", "max_clicks"}
+    assignments = ", ".join(f"{field} = ?" for field in changes if field in allowed)
+    values = [value for field, value in changes.items() if field in allowed]
+    with connection() as conn:
+        existing = conn.execute("SELECT id FROM links WHERE slug = ?", (slug,)).fetchone()
+        if existing is None:
+            raise HTTPException(status_code=404, detail="Short link not found.")
+        conn.execute(f"UPDATE links SET {assignments} WHERE slug = ?", (*values, slug))
+        row = conn.execute("SELECT * FROM links WHERE slug = ?", (slug,)).fetchone()
+    return row_to_link(row)
+
+
+@app.delete("/api/links/{slug}", status_code=204)
+def archive_link(slug: str) -> None:
+    with connection() as conn:
+        result = conn.execute("UPDATE links SET is_active = 0 WHERE slug = ?", (slug,))
+        if result.rowcount == 0:
+            raise HTTPException(status_code=404, detail="Short link not found.")
+
+
 @app.get("/r/{slug}")
 def redirect_link(slug: str, request: Request) -> RedirectResponse:
     with connection() as conn:
@@ -187,6 +217,15 @@ def redirect_link(slug: str, request: Request) -> RedirectResponse:
         ).fetchone()
         if row is None:
             raise HTTPException(status_code=404, detail="Short link not found or inactive.")
+        now = datetime.now(timezone.utc)
+        if row["expires_at"] and datetime.fromisoformat(row["expires_at"]) <= now:
+            raise HTTPException(status_code=410, detail="This short link has expired.")
+        if row["max_clicks"] is not None:
+            current_clicks = conn.execute(
+                "SELECT COUNT(*) AS n FROM clicks WHERE link_id = ?", (row["id"],)
+            ).fetchone()["n"]
+            if current_clicks >= row["max_clicks"]:
+                raise HTTPException(status_code=410, detail="This short link has reached its click limit.")
         referrer = request.headers.get("referer")
         referrer_host = urlparse(referrer).hostname if referrer else None
         device = classify_device(request.headers.get("user-agent", ""))
