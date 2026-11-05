@@ -76,6 +76,22 @@ def test_bot_preview_clicks_are_reported_separately():
     assert overview["bot_or_preview_clicks"] == 1
 
 
+def test_utm_builder_preserves_existing_query_and_encodes_values():
+    response = client.post("/api/utm/build", json={
+        "destination_url": "https://example.com/pricing?plan=pro",
+        "source": "linkedin",
+        "medium": "paid social",
+        "campaign": "november_launch",
+        "content": "founder story & demo",
+    })
+    assert response.status_code == 200
+    result = response.json()
+    assert "plan=pro" in result["tagged_url"]
+    assert "utm_source=linkedin" in result["tagged_url"]
+    assert "utm_medium=paid+social" in result["tagged_url"]
+    assert "utm_content=founder+story+%26+demo" in result["tagged_url"]
+
+
 def test_duplicate_slug_is_conflict():
     body = {"destination_url": "https://example.com", "slug": "same-slug"}
     assert client.post("/api/links", json=body).status_code == 201
