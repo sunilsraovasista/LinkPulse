@@ -179,20 +179,23 @@ def build_utm_url(payload: UTMBuild) -> dict:
     from urllib.parse import parse_qsl, urlencode, urlunparse
 
     parsed = urlparse(str(payload.destination_url))
-    params = dict(parse_qsl(parsed.query, keep_blank_values=True))
-    params.update({
+    utm_values = {
         "utm_source": payload.source,
         "utm_medium": payload.medium,
         "utm_campaign": payload.campaign,
-    })
+    }
     if payload.term:
-        params["utm_term"] = payload.term
+        utm_values["utm_term"] = payload.term
     if payload.content:
-        params["utm_content"] = payload.content
+        utm_values["utm_content"] = payload.content
+    # Preserve repeated non-UTM query keys (for example, repeated filter values).
+    params = [
+        (key, value) for key, value in parse_qsl(parsed.query, keep_blank_values=True)
+        if not key.startswith("utm_")
+    ]
+    params.extend(utm_values.items())
     tagged_url = urlunparse(parsed._replace(query=urlencode(params)))
-    return {"tagged_url": tagged_url, "parameters": {
-        key: value for key, value in params.items() if key.startswith("utm_")
-    }}
+    return {"tagged_url": tagged_url, "parameters": utm_values}
 
 
 @app.post("/api/links", response_model=LinkOut, status_code=201)
