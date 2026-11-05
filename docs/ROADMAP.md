@@ -10,14 +10,14 @@ Status reflects planning only; items are not marked complete until implemented a
 
 ## Phase 1 — Link management
 - [ ] Workspace and project model
-- [ ] Link create, update, archive, and redirect
+- [x] Link create and redirect (initial API slice; update/archive still pending)
 - [ ] Custom aliases and UTM metadata
 - [ ] QR code generation
 - [ ] Expiry and password-protected links
 - [ ] Bulk CSV import/export
 
 ## Phase 2 — Click intelligence
-- [ ] Click event schema and collection
+- [x] Initial click event collection (timestamp, referrer host, coarse device class; advanced classification pending)
 - [ ] Bot and crawler classification
 - [ ] Deduplication and aggregation
 - [ ] Referrer and coarse device/browser reporting
