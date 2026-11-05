@@ -11,7 +11,7 @@ from typing import Iterator
 from urllib.parse import urlparse
 from uuid import uuid4
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.responses import FileResponse, RedirectResponse, Response
 from pydantic import BaseModel, Field, HttpUrl, field_validator
 import qrcode
@@ -249,12 +249,13 @@ def update_link(slug: str, payload: LinkUpdate) -> dict:
     return row_to_link(row)
 
 
-@app.delete("/api/links/{slug}", status_code=204)
-def archive_link(slug: str) -> None:
+@app.delete("/api/links/{slug}", status_code=204, response_class=Response)
+def archive_link(slug: str) -> Response:
     with connection() as conn:
         result = conn.execute("UPDATE links SET is_active = 0 WHERE slug = ?", (slug,))
         if result.rowcount == 0:
             raise HTTPException(status_code=404, detail="Short link not found.")
+    return Response(status_code=204)
 
 
 @app.get("/r/{slug}")
