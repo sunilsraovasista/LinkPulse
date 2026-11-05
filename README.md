@@ -45,7 +45,7 @@ Technology choices will be validated as implementation progresses.
 
 ## Development status
 
-This repository is at the product-definition and initial scaffolding stage. No production integrations, conversion attribution, or deployed service are claimed yet.
+The repository now includes a first runnable FastAPI development slice for creating short links, redirecting visitors, and recording privacy-minimised click metadata, with per-link and overview analytics. It is not yet production-ready: authentication, workspace isolation, PostgreSQL migrations, custom-domain verification, advanced bot exclusion, retention controls, business-event ingestion, and conversion attribution remain unimplemented. PNG QR generation is available, but SVG/PDF exports are pending. Production startup is deliberately blocked until the security and data-isolation foundation is implemented. No public deployment or external integrations are claimed. See [API quick start](backend/README.md).
 
 See [Product vision](docs/PRODUCT_VISION.md), [Architecture](docs/ARCHITECTURE.md), [Roadmap](docs/ROADMAP.md), and [Security and privacy](SECURITY.md).
 
