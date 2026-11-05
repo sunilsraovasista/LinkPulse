@@ -102,6 +102,13 @@ class LinkUpdate(BaseModel):
     expires_at: datetime | None = None
     max_clicks: int | None = Field(default=None, ge=1, le=10000000)
 
+    @field_validator("destination_url")
+    @classmethod
+    def destination_cannot_be_null(cls, value: HttpUrl | None) -> HttpUrl:
+        if value is None:
+            raise ValueError("destination_url cannot be null.")
+        return value
+
     @field_validator("expires_at")
     @classmethod
     def update_timezone_required(cls, value: datetime | None) -> datetime | None:
@@ -250,6 +257,11 @@ def link_analytics(slug: str) -> dict:
         if link is None:
             raise HTTPException(status_code=404, detail="Short link not found.")
         total = conn.execute("SELECT COUNT(*) AS n FROM clicks WHERE link_id = ?", (link["id"],)).fetchone()["n"]
+        human_total = conn.execute(
+            "SELECT COUNT(*) AS n FROM clicks WHERE link_id = ? AND device_type != 'bot_or_preview'",
+            (link["id"],),
+        ).fetchone()["n"]
+        bot_total = total - human_total
         devices = conn.execute(
             "SELECT device_type, COUNT(*) AS clicks FROM clicks WHERE link_id = ? GROUP BY device_type ORDER BY clicks DESC",
             (link["id"],),
@@ -267,6 +279,8 @@ def link_analytics(slug: str) -> dict:
     return {
         "slug": slug,
         "total_clicks": total,
+        "human_clicks": human_total,
+        "bot_or_preview_clicks": bot_total,
         "devices": [dict(row) for row in devices],
         "referrers": [dict(row) for row in referrers],
         "daily_clicks": [dict(row) for row in daily],
@@ -279,8 +293,18 @@ def analytics_overview() -> dict:
     with connection() as conn:
         link_count = conn.execute("SELECT COUNT(*) AS n FROM links WHERE is_active = 1").fetchone()["n"]
         click_count = conn.execute("SELECT COUNT(*) AS n FROM clicks").fetchone()["n"]
+        human_click_count = conn.execute(
+            "SELECT COUNT(*) AS n FROM clicks WHERE device_type != 'bot_or_preview'"
+        ).fetchone()["n"]
+        bot_preview_count = click_count - human_click_count
         recent = conn.execute(
             "SELECT l.slug, l.title, COUNT(c.id) AS clicks FROM links l "
             "LEFT JOIN clicks c ON c.link_id = l.id GROUP BY l.id ORDER BY clicks DESC LIMIT 10"
         ).fetchall()
-    return {"active_links": link_count, "tracked_clicks": click_count, "top_links": [dict(row) for row in recent]}
+    return {
+        "active_links": link_count,
+        "tracked_clicks": click_count,
+        "human_clicks": human_click_count,
+        "bot_or_preview_clicks": bot_preview_count,
+        "top_links": [dict(row) for row in recent],
+    }
