@@ -60,3 +60,53 @@ def test_rejects_non_http_destination():
 
 def test_unknown_slug_is_404():
     assert client.get("/r/not-found").status_code == 404
+
+
+def test_link_can_be_updated_and_archived():
+    created = client.post("/api/links", json={
+        "destination_url": "https://example.com/start",
+        "slug": "lifecycle1",
+    })
+    assert created.status_code == 201
+
+    updated = client.patch("/api/links/lifecycle1", json={
+        "title": "Updated campaign",
+        "destination_url": "https://example.com/new",
+    })
+    assert updated.status_code == 200
+    assert updated.json()["title"] == "Updated campaign"
+    assert updated.json()["destination_url"] == "https://example.com/new"
+
+    archived = client.delete("/api/links/lifecycle1")
+    assert archived.status_code == 204
+    assert client.get("/r/lifecycle1").status_code == 404
+
+
+def test_expired_link_returns_gone():
+    created = client.post("/api/links", json={
+        "destination_url": "https://example.com",
+        "slug": "expired1",
+        "expires_at": "2020-01-01T00:00:00Z",
+    })
+    assert created.status_code == 201
+    assert client.get("/r/expired1").status_code == 410
+
+
+def test_click_limit_stops_redirecting_after_limit():
+    created = client.post("/api/links", json={
+        "destination_url": "https://example.com",
+        "slug": "limited1",
+        "max_clicks": 1,
+    })
+    assert created.status_code == 201
+    assert client.get("/r/limited1", follow_redirects=False).status_code == 307
+    assert client.get("/r/limited1", follow_redirects=False).status_code == 410
+
+
+def test_expiry_requires_timezone():
+    response = client.post("/api/links", json={
+        "destination_url": "https://example.com",
+        "slug": "badexpiry",
+        "expires_at": "2030-01-01T00:00:00",
+    })
+    assert response.status_code == 422
