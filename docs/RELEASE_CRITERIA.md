@@ -45,4 +45,4 @@ No milestone is complete because its UI exists. Every capability must pass funct
 
 ## Current milestone status
 
-The first API slice is development-only. It supports link creation, redirects and basic click analytics on SQLite. It is not a production release and does not satisfy the criteria above.
+The first API slice is development-only. It supports link creation, redirects, PNG QR generation and basic click analytics on SQLite. It is not a production release and does not satisfy the criteria above. Production-mode startup is intentionally blocked until authentication, tenant isolation, PostgreSQL migrations and the security/operations controls above are implemented and tested.
