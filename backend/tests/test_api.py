@@ -184,3 +184,48 @@ def test_dashboard_is_served():
     assert "Campaign workspace" in response.text
     assert "Create a short link" in response.text
     assert 'title="Open PNG QR code"' in response.text
+
+
+def test_production_qr_requires_canonical_public_base_url(monkeypatch):
+    client.post("/api/links", json={
+        "destination_url": "https://example.com",
+        "slug": "prodqr001",
+    })
+    monkeypatch.setenv("LINKPULSE_ENV", "production")
+    monkeypatch.delenv("LINKPULSE_PUBLIC_BASE_URL", raising=False)
+    response = client.get(
+        "/api/links/prodqr001/qr",
+        headers={"host": "attacker.example"},
+    )
+    assert response.status_code == 503
+    assert "LINKPULSE_PUBLIC_BASE_URL" in response.json()["detail"]
+
+
+def test_qr_uses_configured_canonical_public_base_url(monkeypatch):
+    client.post("/api/links", json={
+        "destination_url": "https://example.com",
+        "slug": "canonical1",
+    })
+    monkeypatch.setenv("LINKPULSE_ENV", "production")
+    monkeypatch.setenv("LINKPULSE_PUBLIC_BASE_URL", "https://go.example.org")
+    response = client.get(
+        "/api/links/canonical1/qr",
+        headers={"host": "attacker.example"},
+    )
+    assert response.status_code == 200
+    from PIL import Image
+    import io
+    qr = Image.open(io.BytesIO(response.content))
+    assert qr.format == "PNG"
+    monkeypatch.delenv("LINKPULSE_ENV", raising=False)
+    monkeypatch.delenv("LINKPULSE_PUBLIC_BASE_URL", raising=False)
+
+
+def test_qr_rejects_invalid_configured_public_base_url(monkeypatch):
+    client.post("/api/links", json={
+        "destination_url": "https://example.com",
+        "slug": "badbase001",
+    })
+    monkeypatch.setenv("LINKPULSE_PUBLIC_BASE_URL", "javascript:alert(1)")
+    response = client.get("/api/links/badbase001/qr")
+    assert response.status_code == 500
