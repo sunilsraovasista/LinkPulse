@@ -166,7 +166,7 @@ def test_qr_endpoint_returns_png_for_active_link():
     response = client.get("/api/links/qrcode1/qr")
     assert response.status_code == 200
     assert response.headers["content-type"] == "image/png"
-    assert response.content.startswith(b"\\x89PNG\\r\\n\\x1a\\n")
+    assert response.content.startswith(b"\x89PNG\r\n\x1a\n")
 
 
 def test_qr_endpoint_rejects_archived_link():
