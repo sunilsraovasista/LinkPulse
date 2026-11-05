@@ -110,3 +110,10 @@ def test_expiry_requires_timezone():
         "expires_at": "2030-01-01T00:00:00",
     })
     assert response.status_code == 422
+
+
+def test_dashboard_is_served():
+    response = client.get("/")
+    assert response.status_code == 200
+    assert "Campaign workspace" in response.text
+    assert "Create a short link" in response.text
