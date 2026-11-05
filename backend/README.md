@@ -8,6 +8,7 @@ This service implements a first local development slice:
 - Record click timestamp, referrer host and coarse device class.
 - Inspect per-link analytics and workspace overview, with bot/link-preview requests counted separately from human-classified requests.
 - Build UTM-tagged campaign URLs while preserving existing destination query parameters (`POST /api/utm/build`).
+- Generate PNG QR codes for active short links (`GET /api/links/{slug}/qr`).
 - Persist data in SQLite for zero-configuration local use.
 
 ## Run locally
@@ -22,6 +23,8 @@ uvicorn app.main:app --reload
 ```
 
 Open http://localhost:8000/docs for the interactive API.
+
+For deployments behind a proxy or custom domain, set `LINKPULSE_PUBLIC_BASE_URL` to the canonical public origin (for example, `https://go.example.com`). QR codes use this value when configured; otherwise they use the incoming request origin.
 
 ## Run with Docker
 
