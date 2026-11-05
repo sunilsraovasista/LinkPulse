@@ -297,7 +297,18 @@ def link_qr(slug: str, request: Request) -> Response:
         raise HTTPException(status_code=404, detail="Short link not found.")
     if not link["is_active"]:
         raise HTTPException(status_code=410, detail="Archived links do not have an active QR code.")
-    public_base = os.getenv("LINKPULSE_PUBLIC_BASE_URL", str(request.base_url)).rstrip("/")
+    configured_base = os.getenv("LINKPULSE_PUBLIC_BASE_URL")
+    if not configured_base:
+        # Host headers are request-controlled; use this fallback only in development.
+        if os.getenv("LINKPULSE_ENV", "development").lower() == "production":
+            raise HTTPException(status_code=503, detail="LINKPULSE_PUBLIC_BASE_URL must be configured in production.")
+        public_base = str(request.base_url).rstrip("/")
+    else:
+        parsed_base = urlparse(configured_base)
+        if (parsed_base.scheme not in {"http", "https"} or not parsed_base.hostname
+                or parsed_base.username or parsed_base.password or parsed_base.query or parsed_base.fragment):
+            raise HTTPException(status_code=500, detail="LINKPULSE_PUBLIC_BASE_URL must be an absolute HTTP(S) base URL without credentials, query, or fragment.")
+        public_base = configured_base.rstrip("/")
     short_url = f"{public_base}/r/{slug}"
     image = qrcode.make(short_url)
     buffer = io.BytesIO()
