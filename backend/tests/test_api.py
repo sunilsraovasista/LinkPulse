@@ -229,3 +229,13 @@ def test_qr_rejects_invalid_configured_public_base_url(monkeypatch):
     monkeypatch.setenv("LINKPULSE_PUBLIC_BASE_URL", "javascript:alert(1)")
     response = client.get("/api/links/badbase001/qr")
     assert response.status_code == 500
+
+
+
+def test_production_startup_fails_closed_until_security_foundation(monkeypatch):
+    import pytest
+
+    monkeypatch.setenv("LINKPULSE_ENV", "production")
+    with pytest.raises(RuntimeError, match="Production startup is disabled"):
+        with TestClient(app):
+            pass
