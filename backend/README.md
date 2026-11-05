@@ -24,7 +24,7 @@ uvicorn app.main:app --reload
 
 Open http://localhost:8000/docs for the interactive API.
 
-For deployments behind a proxy or custom domain, set `LINKPULSE_PUBLIC_BASE_URL` to the canonical public origin (for example, `https://go.example.com`). QR codes use this value when configured; otherwise they use the incoming request origin.
+For deployments behind a proxy or custom domain, set `LINKPULSE_PUBLIC_BASE_URL` to the canonical public base URL (for example, `https://go.example.com`). Set `LINKPULSE_ENV=production` in production: QR generation then fails closed with HTTP 503 unless the canonical URL is configured, rather than trusting the request `Host` header. The configured value must use HTTP(S) and must not contain credentials, a query, or a fragment. In development only, the request origin remains the fallback.
 
 ## Run with Docker
 
