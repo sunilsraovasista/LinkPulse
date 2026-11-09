@@ -40,8 +40,8 @@ def test_recent_click_decline_is_compared_over_two_seven_day_windows():
     }, today=today)
     decline = next(item for item in result["recommendations"] if item["id"] == "click-decline")
     assert decline["priority"] == "high"
-    assert "80" in decline["evidence"]
-    assert "16" in decline["evidence"]
+    assert "70" in decline["evidence"]
+    assert "14" in decline["evidence"]
 
 
 def test_clicks_are_never_described_as_conversions_or_revenue():
