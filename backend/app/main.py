@@ -237,6 +237,16 @@ def list_links() -> list[dict]:
     return [row_to_link(row) for row in rows]
 
 
+@app.get("/api/links/{slug}", response_model=LinkOut)
+def get_link(slug: str) -> dict:
+    """Return one link's current configuration without recording a click."""
+    with connection() as conn:
+        row = conn.execute("SELECT * FROM links WHERE slug = ?", (slug,)).fetchone()
+    if row is None:
+        raise HTTPException(status_code=404, detail="Short link not found.")
+    return row_to_link(row)
+
+
 @app.patch("/api/links/{slug}", response_model=LinkOut)
 def update_link(slug: str, payload: LinkUpdate) -> dict:
     changes = payload.model_dump(exclude_unset=True)
