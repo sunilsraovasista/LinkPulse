@@ -31,6 +31,8 @@ td a{color:#315c89;text-decoration:none;word-break:break-all}.slug{font-weight:7
 .actions{display:flex;gap:6px}.actions button{padding:7px 9px;font-size:11px}.qr-link{display:inline-block;padding:7px 9px;border-radius:9px;background:#edf1f5;color:#344256;text-decoration:none;font-size:11px;font-weight:650}
 @media(max-width:850px){.layout{grid-template-columns:1fr}.metrics{grid-template-columns:1fr 1fr 1fr}}
 @media(max-width:560px){.shell{padding:20px 14px}.metrics{gap:8px}.metric{padding:13px}.metric strong{font-size:22px}.metric span{font-size:10px}h1{font-size:25px}}
+
+.strategy-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}.strategy-head h2{margin:0 0 4px}.strategy-head p,.strategy-summary{font-size:12px;color:#687586;margin:0 0 12px}.strategy-status{font-size:10px;font-weight:750;padding:5px 8px;border-radius:20px;background:#edf2ff;color:#315efb;white-space:nowrap}.strategy-list{display:grid;gap:10px}.strategy-card{border:1px solid #e7ebf0;border-radius:11px;padding:13px}.strategy-top{display:flex;justify-content:space-between;gap:10px;align-items:center}.strategy-card p{font-size:12px;color:#687586;margin:8px 0}.strategy-next{font-size:12px;color:#344256;background:#f6f8fa;border-radius:8px;padding:10px}.priority{font-size:10px;font-weight:800;border-radius:7px;padding:4px 7px;text-transform:uppercase}.priority.high{background:#fff0ed;color:#b42318}.priority.medium{background:#fff4df;color:#96600b}.priority.low{background:#e8f7ef;color:#13724d}
 </style>
 </head>
 <body><main class="shell">
@@ -55,13 +57,30 @@ td a{color:#315c89;text-decoration:none;word-break:break-all}.slug{font-weight:7
 </div>
 <div class="panel"><h2>Your links</h2><div class="table-wrap"><table><thead><tr><th>LINK</th><th>CLICKS</th><th>STATUS</th><th>ACTIONS</th></tr></thead><tbody id="links"><tr><td colspan="4" class="empty">Loading workspace…</td></tr></tbody></table></div></div>
 </section>
+<section class="panel" id="growth-strategy" style="margin-top:16px">
+  <div class="strategy-head"><div><h2>Growth Strategist</h2><p>Recommendations from recorded campaign traffic</p></div><span class="strategy-status" id="growthStatus">RULES-BASED V1</span></div>
+  <p class="strategy-summary" id="growthSummary">Waiting for click telemetry…</p>
+  <div class="strategy-list" id="growthRecommendations"><div class="empty">No recommendations loaded.</div></div>
+  <p class="hint">Rules-based v1. Clicks are not conversions or revenue. Validate each recommendation before changing campaign budgets.</p>
+</section>
+
 </main>
 <script>
 const $=id=>document.getElementById(id);
 function notify(message,error=false){const el=$("toast");el.textContent=message;el.className="toast show "+(error?"error":"ok");}
 async function api(path,options){const response=await fetch(path,options);if(!response.ok){let detail="Request failed";try{detail=(await response.json()).detail||detail}catch{}throw new Error(detail)}return response.status===204?null:response.json()}
+function renderGrowthStrategy(data){
+ const root=$("growthRecommendations");root.innerHTML="";
+ $("growthStatus").textContent=data.status==="ready"?"PRIORITIES READY":"INSUFFICIENT SIGNAL";
+ const summary=data.summary||{};
+ $("growthSummary").textContent=summary.total_clicks+" tracked requests · "+summary.human_clicks+" human-classified · "+summary.bot_or_preview_clicks+" bot/preview-classified.";
+ const items=data.recommendations||[];
+ if(!items.length){const empty=document.createElement("div");empty.className="empty";empty.textContent="No actionable signal yet. More campaign traffic may be needed.";root.append(empty);return;}
+ for(const item of items){const card=document.createElement("article");card.className="strategy-card";const top=document.createElement("div");top.className="strategy-top";const title=document.createElement("strong");title.textContent=item.title;const priority=document.createElement("span");priority.className="priority "+item.priority;priority.textContent=item.priority;top.append(title,priority);const evidence=document.createElement("p");evidence.textContent=item.evidence;const next=document.createElement("div");next.className="strategy-next";next.textContent=item.recommended_action;card.append(top,evidence,next);root.append(card);}
+}
 async function refresh(){
- const [overview,links]=await Promise.all([api("/api/analytics/overview"),api("/api/links")]);
+ const [overview,links,strategy]=await Promise.all([api("/api/analytics/overview"),api("/api/links"),api("/api/strategy/growth")]);
+ renderGrowthStrategy(strategy);
  $("active").textContent=overview.active_links;$("clicks").textContent=overview.tracked_clicks;$("total").textContent=links.length;
  const body=$("links");body.innerHTML="";
  if(!links.length){body.innerHTML='<tr><td colspan="4" class="empty">No links yet. Create your first campaign link.</td></tr>';return}
