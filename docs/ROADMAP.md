@@ -5,20 +5,26 @@ Status reflects planning only; items are not marked complete until implemented a
 ## Phase 0 — Product and engineering foundation
 - [ ] Confirm product requirements and user personas
 - [ ] Validate competitor gaps and open-source license choice
-- [ ] Establish repository conventions, CI, linting, and test strategy
+- [x] Establish repository conventions, CI workflow, and API regression-test suite (CI execution still to be verified)
+- [ ] Add linting, coverage thresholds, and migration tests
 - [ ] Define threat model, privacy model, and data retention defaults
 
 ## Phase 1 — Link management
 - [ ] Workspace and project model
-- [ ] Link create, update, archive, and redirect
-- [ ] Custom aliases and UTM metadata
-- [ ] QR code generation
-- [ ] Expiry and password-protected links
+- [ ] Authentication, secure sessions, invitations and role-based access
+- [ ] PostgreSQL + Alembic migrations; SQLite remains development/test-only
+- [x] Link create, update, archive, and redirect (initial API slice)
+- [x] Custom aliases (initial slug support) and UTM URL builder API
+- [ ] Persist campaign metadata and expose UTM builder in dashboard
+- [x] PNG QR generation API and active-link dashboard action
+- [ ] SVG/PDF export and QR management
+- [x] Expiry and click-limit enforcement
+- [ ] Password-protected links
 - [ ] Bulk CSV import/export
 
 ## Phase 2 — Click intelligence
-- [ ] Click event schema and collection
-- [ ] Bot and crawler classification
+- [x] Initial click event collection (timestamp, referrer host, coarse device class; advanced classification pending)
+- [x] Basic bot/link-preview classification with separate counts (advanced detection and filtering pending)
 - [ ] Deduplication and aggregation
 - [ ] Referrer and coarse device/browser reporting
 - [ ] Privacy controls and retention jobs
@@ -31,7 +37,8 @@ Status reflects planning only; items are not marked complete until implemented a
 - [ ] Transparent attribution windows and models
 
 ## Phase 4 — Reporting and integrations
-- [ ] Campaign dashboard and comparisons
+- [x] Initial responsive campaign workspace dashboard
+- [ ] Campaign comparisons and advanced dashboard filters
 - [ ] CSV export and scheduled reports
 - [ ] Webhooks with retries and signing
 - [ ] SDKs and integration examples

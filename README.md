@@ -43,9 +43,13 @@ These are illustrative workflows, not claims about integrations or verified cust
 
 Technology choices will be validated as implementation progresses.
 
+## AI growth strategist (v1)
+
+The API exposes `GET /api/strategy/growth`, a deterministic recommendation baseline based on recorded click telemetry. It flags potential traffic-quality, referrer-coverage, device-mix, channel-concentration and weekly movement signals. It does not claim conversions, customers or revenue. This endpoint is not an LLM-powered autonomous agent and must remain behind the development-only service boundary until authentication and workspace isolation are implemented. See [Growth Strategist v1](docs/GROWTH_STRATEGIST_V1.md).
+
 ## Development status
 
-This repository is at the product-definition and initial scaffolding stage. No production integrations, conversion attribution, or deployed service are claimed yet.
+The repository now includes a first runnable FastAPI development slice for creating short links, redirecting visitors, and recording privacy-minimised click metadata, with per-link and overview analytics. It is not yet production-ready: authentication, workspace isolation, PostgreSQL migrations, custom-domain verification, advanced bot exclusion, retention controls, business-event ingestion, and conversion attribution remain unimplemented. PNG QR generation is available, but SVG/PDF exports are pending. Production startup is deliberately blocked until the security and data-isolation foundation is implemented. No public deployment or external integrations are claimed. See [API quick start](backend/README.md).
 
 See [Product vision](docs/PRODUCT_VISION.md), [Architecture](docs/ARCHITECTURE.md), [Roadmap](docs/ROADMAP.md), and [Security and privacy](SECURITY.md).
 

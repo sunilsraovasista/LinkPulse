@@ -1,0 +1,14 @@
+services:
+  api:
+    build:
+      context: ./backend
+    ports:
+      - "8000:8000"
+    environment:
+      LINKPULSE_DB_PATH: /data/linkpulse.db
+    volumes:
+      - linkpulse_data:/data
+    restart: unless-stopped
+
+volumes:
+  linkpulse_data:
