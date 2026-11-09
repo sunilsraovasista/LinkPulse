@@ -399,3 +399,34 @@ def analytics_overview() -> dict:
         "bot_or_preview_clicks": bot_preview_count,
         "top_links": [dict(row) for row in recent],
     }
+
+
+@app.get("/api/strategy/growth")
+def growth_strategy() -> dict:
+    """Return bounded, rules-based recommendations from recorded click telemetry."""
+    from app.strategist import build_growth_strategy
+
+    with connection() as conn:
+        total = conn.execute("SELECT COUNT(*) AS n FROM clicks").fetchone()["n"]
+        human = conn.execute(
+            "SELECT COUNT(*) AS n FROM clicks WHERE device_type != 'bot_or_preview'"
+        ).fetchone()["n"]
+        devices = conn.execute(
+            "SELECT device_type, COUNT(*) AS clicks FROM clicks GROUP BY device_type ORDER BY device_type"
+        ).fetchall()
+        referrers = conn.execute(
+            "SELECT COALESCE(referrer_host, 'direct / unknown') AS source, COUNT(*) AS clicks "
+            "FROM clicks GROUP BY source ORDER BY clicks DESC LIMIT 50"
+        ).fetchall()
+        daily = conn.execute(
+            "SELECT substr(clicked_at, 1, 10) AS day, COUNT(*) AS clicks "
+            "FROM clicks GROUP BY day ORDER BY day DESC LIMIT 90"
+        ).fetchall()
+    return build_growth_strategy({
+        "total_clicks": total,
+        "human_clicks": human,
+        "bot_or_preview_clicks": total - human,
+        "devices": [dict(row) for row in devices],
+        "referrers": [dict(row) for row in referrers],
+        "daily_clicks": [dict(row) for row in daily],
+    })
