@@ -184,6 +184,7 @@ def test_dashboard_is_served():
     assert "Campaign workspace" in response.text
     assert "Create a short link" in response.text
     assert 'title="Open PNG QR code"' in response.text
+    assert "Growth Strategist" in response.text
 
 
 def test_production_qr_requires_canonical_public_base_url(monkeypatch):
