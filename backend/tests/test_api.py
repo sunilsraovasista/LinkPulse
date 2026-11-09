@@ -239,3 +239,29 @@ def test_production_startup_fails_closed_until_security_foundation(monkeypatch):
     with pytest.raises(RuntimeError, match="Production startup is disabled"):
         with TestClient(app):
             pass
+
+
+def test_growth_strategist_endpoint_returns_guarded_recommendations():
+    empty = client.get("/api/strategy/growth")
+    assert empty.status_code == 200
+    assert empty.json()["status"] == "insufficient_data"
+
+    created = client.post("/api/links", json={
+        "destination_url": "https://example.com/landing",
+        "slug": "growthcheck1",
+    })
+    assert created.status_code == 201
+    client.get("/r/growthcheck1", follow_redirects=False, headers={
+        "user-agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) Mobile",
+    })
+    client.get("/r/growthcheck1", follow_redirects=False, headers={
+        "user-agent": "Slackbot-LinkExpanding",
+    })
+
+    result = client.get("/api/strategy/growth")
+    assert result.status_code == 200
+    body = result.json()
+    assert body["summary"]["total_clicks"] == 2
+    assert body["summary"]["human_clicks"] == 1
+    assert body["summary"]["bot_or_preview_clicks"] == 1
+    assert "A click is not a conversion" in " ".join(body["guardrails"])
